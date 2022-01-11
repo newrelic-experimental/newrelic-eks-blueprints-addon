@@ -1,36 +1,102 @@
 [![New Relic Experimental header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Experimental.png)](https://opensource.newrelic.com/oss-category/#new-relic-experimental)
 
-# [Name of Project] [build badges go here when available]
+# New Relic AddOn for AWS SSP CDK Platform
 
->[Brief description - what is the project and value does it provide? How often should users expect to get releases? How is versioning set up? Where does this project want to go?]
+This repository contains the source code for the New Relic AddOn for AWS SSP CDK. `ssp-amazon-eks` is a [CDK](https://aws.amazon.com/cdk/) construct that makes it easy for customers to build and deploy a Shared Services Platform (SSP) on top of [Amazon EKS](https://aws.amazon.com/eks/).
 
 ## Installation
 
-> [Include a step-by-step procedure on how to get your code installed. Be sure to include any third-party dependencies that need to be installed separately]
+Using [npm](https://npmjs.org):
 
-## Getting Started
->[Simple steps to start working with the software similar to a "Hello World"]
+```bash
+$ npm install @bpschmitt/newrelic-ssp-addon
+```
 
 ## Usage
->[**Optional** - Include more thorough instructions on how to use the software. This section might not be needed if the Getting Started section is enough. Remove this section if it's not needed.]
 
+```
+import { App } from '@aws-cdk/core';
+import * as ssp from '@aws-quickstart/ssp-amazon-eks';
+import { NewRelicAddOn } from '@bpschmitt/newrelic-ssp-addon';
 
-## Building
+const app = new App();
 
->[**Optional** - Include this section if users will need to follow specific instructions to build the software from source. Be sure to include any third party build dependencies that need to be installed separately. Remove this section if it's not needed.]
+ssp.EksBlueprint.builder()
+    .addOns(new ssp.MetricsServerAddOn)
+    .addOns(new ssp.ClusterAutoScalerAddOn)
+    .addOns(new ssp.addons.SSMAgentAddOn)
+    .addOns(new NewRelicAddOn({
+        newRelicLicenseKey: "<NEW RELIC LICENSE KEY>",
+        newRelicClusterName: "my-test-cluster",
+        lowDataMode: true,
+        installInfrastructure: true,
+        installKSM: true,
+        installPrometheus: false,
+        installLogging: false
+    }))
+    .region(process.env.AWS_REGION)
+    .account(process.env.AWS_ACCOUNT)
+    .build(app, 'my-test-cluster');
+```
 
-## Testing
+## `NewRelicAddOn` Options (props)
 
->[**Optional** - Include instructions on how to run tests if we include tests with the codebase. Remove this section if it's not needed.]
+#### `newRelicLicenseKey: string` (required)
+
+New Relic License Key
+
+#### `newRelicClusterName: string` (required)
+
+The name of the cluster to be displayed in the New Relic UI.
+
+#### `namespace?: string` (optional)
+
+The namespace where New Relic components will be installed. Defaults to `newrelic`.
+
+#### `lowDataMode?: boolean` (optional)
+
+Default `true`.  Set to `false` to disable `lowDataMode`.  For more details, visit https://docs.newrelic.com/docs/kubernetes-pixie/kubernetes-integration/installation/install-kubernetes-integration-using-helm/#reducedataingest
+
+#### `installInfrastructure?: boolean` (optional)
+
+Default `true`.  Set to `false` to disable installation of the New Relic Infrastructure Daemonset.
+
+#### `installInfrastructurePrivileged?: boolean` (optional)
+
+Default `true`.  Set to `false` to disable privileged install of the New Relic Infrastructure Daemonset.
+
+#### `installKSM?: boolean` (optional)
+
+Default `true`.  Set to `false` to disable installation of Kube State Metrics.  An instance of KSM is required in the cluster for the New Relic Infrastructure Daemonset to function properly.
+
+#### `installPrometheus?: boolean` (optional)
+
+Default `true`.  Set to `false` to disable installation of the Prometheus OpenMetrics Integration.
+
+#### `installLogging?: boolean` (optional)
+
+Default `true`.  Set to `false` to disable installation of the New Relic Logging (Fluent-Bit) Daemonset.
+
+#### `version?: string` (optional)
+
+Helm chart version.
+
+#### `repository?: string`, `release?: string`, `chart?: string` (optional)
+
+Additional options for customers who may need to supply their own private Helm repository.
+
+####  `values?: { [key: string]: any }` (optional)
+
+Custom values to pass to the chart. Config options: https://github.com/newrelic/helm-charts/tree/master/charts/nri-bundle#configuration
 
 ## Support
 
-New Relic hosts and moderates an online forum where customers can interact with New Relic employees as well as other customers to get help and share best practices. Like all official New Relic open source projects, there's a related Community topic in the New Relic Explorers Hub. You can find this project's topic/threads here:
+New Relic hosts and moderates an online forum where customers can interact with New Relic employees as well as other customers to get help and share best practices.
 
->Add the url for the support thread here
+https://discuss.newrelic.com/
 
 ## Contributing
-We encourage your contributions to improve [project name]! Keep in mind when you submit your pull request, you'll need to sign the CLA via the click-through using CLA-Assistant. You only have to sign the CLA one time per project.
+We encourage your contributions to improve newrelic-ssp-addon! Keep in mind when you submit your pull request, you'll need to sign the CLA via the click-through using CLA-Assistant. You only have to sign the CLA one time per project.
 If you have any questions, or to execute our corporate CLA, required if your contribution is on behalf of a company,  please drop us an email at opensource@newrelic.com.
 
 **A note about vulnerabilities**
@@ -40,5 +106,4 @@ As noted in our [security policy](../../security/policy), New Relic is committed
 If you believe you have found a security vulnerability in this project or any of New Relic's products or websites, we welcome and greatly appreciate you reporting it to New Relic through [HackerOne](https://hackerone.com/newrelic).
 
 ## License
-[Project Name] is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License.
->[If applicable: The [project name] also uses source code from third-party libraries. You can find full details on which libraries are used and the terms under which they are licensed in the third-party notices document.]
+newrelic-ssp-addon is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License.
