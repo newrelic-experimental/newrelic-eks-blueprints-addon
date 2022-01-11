@@ -9,7 +9,7 @@ This repository contains the source code for the New Relic AddOn for AWS SSP CDK
 Using [npm](https://npmjs.org):
 
 ```bash
-$ npm install @bpschmitt/newrelic-ssp-addon
+$ npm install @newrelic/newrelic-ssp-addon
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ $ npm install @bpschmitt/newrelic-ssp-addon
 ```
 import { App } from '@aws-cdk/core';
 import * as ssp from '@aws-quickstart/ssp-amazon-eks';
-import { NewRelicAddOn } from '@bpschmitt/newrelic-ssp-addon';
+import { NewRelicAddOn } from '@newrelic/newrelic-ssp-addon';
 
 const app = new App();
 
