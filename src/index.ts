@@ -1,4 +1,5 @@
 import { ClusterAddOn, ClusterInfo } from "@aws-quickstart/ssp-amazon-eks";
+import { SecretsManager } from "aws-sdk";
 import { Construct } from "@aws-cdk/core";
 
 export interface NewRelicAddOnProps {
@@ -11,6 +12,11 @@ export interface NewRelicAddOnProps {
      * New Relic License Key
      */
     newRelicLicenseKey?: string;
+
+    /**
+     * Secret Name containing the New Relic License Key in AWS Secrets Manager
+     */
+    nrLicenseKeySecretName?: string;
 
     /**
      * Kubernetes cluster name in New Relic
@@ -115,7 +121,27 @@ export class NewRelicAddOn implements ClusterAddOn {
         this.options = { ...defaultProps, ...props };
     }
 
-    deploy(clusterInfo: ClusterInfo): Promise<Construct> {
+    async getNRLicenseKeyFromSecret(secretName: string, region: string) {
+        const client = new SecretsManager({ region: region });
+        let secretObject: any = {};
+
+        try {
+            let response = await client.getSecretValue({ SecretId: secretName }).promise();
+            if (response) {
+                if (response.SecretString) {
+                    secretObject = JSON.parse(response.SecretString);
+                } else if (response.SecretBinary) {
+                    secretObject = JSON.parse(response.SecretBinary.toString());
+                }
+            }
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
+        return secretObject;
+    }
+
+    async deploy(clusterInfo: ClusterInfo): Promise<Construct> {
 
         const props = this.options;
 
@@ -127,6 +153,9 @@ export class NewRelicAddOn implements ClusterAddOn {
 
         if (props.newRelicLicenseKey) {
             setPath(values, "global.licenseKey", props.newRelicLicenseKey);
+        } else if (props.nrLicenseKeySecretName) {
+            const response = await this.getNRLicenseKeyFromSecret(props.nrLicenseKeySecretName, clusterInfo.cluster.stack.region);
+            setPath(values, "global.licenseKey", response.license_key);
         }
 
         if (props.lowDataMode) {
