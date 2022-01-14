@@ -155,6 +155,7 @@ export class NewRelicAddOn implements ClusterAddOn {
             setPath(values, "global.licenseKey", props.newRelicLicenseKey);
         } else if (props.nrLicenseKeySecretName) {
             const response = await this.getNRLicenseKeyFromSecret(props.nrLicenseKeySecretName, clusterInfo.cluster.stack.region);
+            // license_key is the key name of the secret containing the license key value
             setPath(values, "global.licenseKey", response.license_key);
         }
 
