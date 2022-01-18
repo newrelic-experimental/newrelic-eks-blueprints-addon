@@ -1,6 +1,6 @@
 {
     "name": "@newrelic/newrelic-ssp-addon",
-    "version": "0.2.2",
+    "version": "0.3.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "files": [
@@ -8,8 +8,8 @@
     ],
     "license": "Apache-2.0",
     "repository": {
-      "type": "git",
-      "url": "https://github.com/newrelic-experimental/newrelic-ssp-addon.git"
+        "type": "git",
+        "url": "https://github.com/newrelic-experimental/newrelic-ssp-addon.git"
     },
     "scripts": {
         "build": "rm -rf dist && tsc",
