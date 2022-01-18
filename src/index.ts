@@ -63,19 +63,29 @@ export interface NewRelicAddOnProps {
     installInfrastructurePrivileged?: boolean;
 
     /**
+     * Set to true to install the New Relic Kubernetes Events integration (default: true)
+     */
+    installKubeEvents?: boolean;
+
+    /**
      * Set to true to install the Kube State Metrics (default: true)
      */
     installKSM?: boolean;
 
     /**
-     * Set to true to install New Relic Prometheus OpenMetrics Integration (default: true)
-     */
-    installPrometheus?: boolean;
-
-    /**
      * Set to true to install the New Relic Fluent-Bit Logging integration (default: true)
      */
     installLogging?: boolean;
+
+    /**
+     * Set to true to install the New Relic Kubernetes Metrics Adapter (default: false)
+     */
+    installMetricsAdapter?: boolean;
+
+    /**
+     * Set to true to install New Relic Prometheus OpenMetrics Integration (default: true)
+     */
+    installPrometheus?: boolean;
 
     /**
      * Values to pass to the chart.
@@ -96,6 +106,8 @@ const defaultProps: NewRelicAddOnProps = {
     installInfrastructure: true,
     installInfrastructurePrivileged: true,
     installKSM: true,
+    installKubeEvents: true,
+    installMetricsAdapter: false,
     installPrometheus: true,
     installLogging: true
 };
@@ -155,7 +167,6 @@ export class NewRelicAddOn implements ClusterAddOn {
             setPath(values, "global.licenseKey", props.newRelicLicenseKey);
         } else if (props.nrLicenseKeySecretName) {
             const response = await this.getNRLicenseKeyFromSecret(props.nrLicenseKeySecretName, clusterInfo.cluster.stack.region);
-            // license_key is the key name of the secret containing the license key value
             setPath(values, "global.licenseKey", response.license_key);
         }
 
@@ -178,6 +189,14 @@ export class NewRelicAddOn implements ClusterAddOn {
 
         if (props.installKSM) {
             setPath(values, "ksm.enabled", props.installKSM);
+        }
+
+        if (props.installKubeEvents) {
+            setPath(values, "kubeEvents.enabled", props.installKubeEvents);
+        }
+
+        if (props.installMetricsAdapter) {
+            setPath(values, "metrics-adapter.enabled", props.installMetricsAdapter);
         }
 
         const newRelicHelmChart = clusterInfo.cluster.addHelmChart("newrelic-bundle", {

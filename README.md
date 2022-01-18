@@ -29,10 +29,11 @@ ssp.EksBlueprint.builder()
         nrLicenseKeySecretName: "nr-license-key", // stored in AWS Secrets Manager
         newRelicClusterName: "my-test-cluster",
         lowDataMode: true,
-        installInfrastructure: true,
-        installKSM: true,
-        installPrometheus: false,
-        installLogging: false
+        installInfrastructure: true,  // New Relic Infrastructure Integration
+        installKSM: true,             // Kube State Metrics, optional if already exists
+        installKubeEvents: true,      // New Relic Kubernetes Events Integration
+        installPrometheus: true,      // New Relic Prometheus OpenMetrics Integration
+        installLogging: true          // New Relic Logging (Fluent-Bit) Integration
     }))
     .region(process.env.AWS_REGION)
     .account(process.env.AWS_ACCOUNT)
@@ -73,13 +74,21 @@ Default `true`.  Set to `false` to disable privileged install of the New Relic I
 
 Default `true`.  Set to `false` to disable installation of Kube State Metrics.  An instance of KSM is required in the cluster for the New Relic Infrastructure Daemonset to function properly.
 
-#### `installPrometheus?: boolean` (optional)
+#### `installKubeEvents?: boolean` (optional)
 
-Default `true`.  Set to `false` to disable installation of the Prometheus OpenMetrics Integration.
+Default `true`.  Set to `false` to disable installation of the New Relic Kubernetes Events integration.
 
 #### `installLogging?: boolean` (optional)
 
 Default `true`.  Set to `false` to disable installation of the New Relic Logging (Fluent-Bit) Daemonset.
+
+#### `installMetricsAdapter?: boolean` (optional)
+
+Default `false`.  Set to `true` to enable installation of the New Relic Kubernetes Metrics Adapter.
+
+#### `installPrometheus?: boolean` (optional)
+
+Default `true`.  Set to `false` to disable installation of the Prometheus OpenMetrics Integration.
 
 #### `version?: string` (optional)
 
