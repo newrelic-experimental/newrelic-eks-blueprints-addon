@@ -73,13 +73,21 @@ Default `true`.  Set to `false` to disable privileged install of the New Relic I
 
 Default `true`.  Set to `false` to disable installation of Kube State Metrics.  An instance of KSM is required in the cluster for the New Relic Infrastructure Daemonset to function properly.
 
-#### `installPrometheus?: boolean` (optional)
+#### `installKubeEvents?: boolean` (optional)
 
-Default `true`.  Set to `false` to disable installation of the Prometheus OpenMetrics Integration.
+Default `true`.  Set to `false` to disable installation of the New Relic Kubernetes Events integration.
 
 #### `installLogging?: boolean` (optional)
 
 Default `true`.  Set to `false` to disable installation of the New Relic Logging (Fluent-Bit) Daemonset.
+
+#### `installMetricsAdapter?: boolean` (optional)
+
+Default `false`.  Set to `true` to enable installation of the New Relic Kubernetes Metrics Adapter.
+
+#### `installPrometheus?: boolean` (optional)
+
+Default `true`.  Set to `false` to disable installation of the Prometheus OpenMetrics Integration.
 
 #### `version?: string` (optional)
 
