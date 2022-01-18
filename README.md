@@ -26,7 +26,7 @@ ssp.EksBlueprint.builder()
     .addOns(new ssp.ClusterAutoScalerAddOn)
     .addOns(new ssp.addons.SSMAgentAddOn)
     .addOns(new NewRelicAddOn({
-        newRelicLicenseKey: "<NEW RELIC LICENSE KEY>",
+        nrLicenseKeySecretName: "nr-license-key", // stored in AWS Secrets Manager
         newRelicClusterName: "my-test-cluster",
         lowDataMode: true,
         installInfrastructure: true,
@@ -43,7 +43,11 @@ ssp.EksBlueprint.builder()
 
 #### `newRelicLicenseKey: string` (required)
 
-New Relic License Key
+New Relic License Key (plain text).  Use AWS Secrets Manager for added security.
+
+#### `newRelicLicenseKeySecretName: string` (required)
+
+Secret Name containing the New Relic License Key in AWS Secrets Manager.  Secret key should be `license_key`.
 
 #### `newRelicClusterName: string` (required)
 
