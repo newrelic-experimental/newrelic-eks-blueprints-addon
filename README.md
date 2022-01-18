@@ -29,10 +29,11 @@ ssp.EksBlueprint.builder()
         nrLicenseKeySecretName: "nr-license-key", // stored in AWS Secrets Manager
         newRelicClusterName: "my-test-cluster",
         lowDataMode: true,
-        installInfrastructure: true,
-        installKSM: true,
-        installPrometheus: false,
-        installLogging: false
+        installInfrastructure: true,  // New Relic Infrastructure Integration
+        installKSM: true,             // Kube State Metrics, optional if already exists
+        installKubeEvents: true,      // New Relic Kubernetes Events Integration
+        installPrometheus: true,      // New Relic Prometheus OpenMetrics Integration
+        installLogging: true          // New Relic Logging (Fluent-Bit) Integration
     }))
     .region(process.env.AWS_REGION)
     .account(process.env.AWS_ACCOUNT)
