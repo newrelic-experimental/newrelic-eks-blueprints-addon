@@ -25,12 +25,17 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: ${{ matrix.node-version }}
+        registry-url: 'https://registry.npmjs.org'
     - name: Install dependencies
       run: npm install
     - name: Build module
       run: npm run build
-    - name: Version ${{ inputs.release_type }}
-      run: npm version ${{ inputs.release_type }}
+    - name: Setup GitHub Credentials
+      run: |
+        git config user.name $GITHUB_ACTOR
+        git config user.email gh-actions-${GITHUB_ACTOR}@github.com
+    - name: Version ${{ github.event.inputs.release_type }}
+      run: npm version ${{ github.event.inputs.release_type }}
     - name: Publish module
       run: npm publish
       env:
