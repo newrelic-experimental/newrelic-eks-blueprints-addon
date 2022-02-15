@@ -18,12 +18,15 @@
         "cdk": "cdk",
         "lint": "npx eslint . --ext .js,.jsx,.ts,.tsx"
     },
+    "bin": {
+        "eks-ssp-patterns": "bin/main.ts"
+      },
     "devDependencies": {
         "@types/jest": "^26.0.10",
         "@types/node": "10.17.27",
         "@typescript-eslint/eslint-plugin": "^4.23.0",
         "@typescript-eslint/parser": "^4.23.0",
-        "aws-cdk": "1.135.0",
+        "aws-cdk": "1.143.0",
         "copyfiles": "^2.4.1",
         "eslint": "^7.26.0",
         "jest": "^26.4.2",
@@ -32,8 +35,7 @@
         "typescript": "~3.9.7"
     },
     "dependencies": {
-        "@aws-cdk/aws-iam": "1.135.0",
-        "@aws-cdk/core": "1.135.0",
+        "@aws-cdk/aws-iam": "1.143.0",
         "@aws-quickstart/ssp-amazon-eks": "^0.12.3",
         "dotenv": "^10.0.0",
         "source-map-support": "^0.5.16"
