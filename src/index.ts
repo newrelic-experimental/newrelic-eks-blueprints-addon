@@ -1,6 +1,5 @@
-import { ManagedPolicy } from '@aws-cdk/aws-iam';
-import { Construct } from '@aws-cdk/core';
 import { ServiceAccount } from '@aws-cdk/aws-eks';
+import { Construct } from '@aws-cdk/core';
 import * as ssp from '@aws-quickstart/ssp-amazon-eks';
 
 export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
@@ -109,6 +108,7 @@ const defaultProps: ssp.addons.HelmAddOnProps & NewRelicAddOnProps = {
     values: {}
 };
 
+const setPath = ssp.utils.setPath;
 
 export class NewRelicAddOn extends ssp.addons.HelmAddOn {
 
@@ -142,8 +142,12 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
     async deploy(clusterInfo: ssp.ClusterInfo): Promise<Construct> {
 
         const props = this.options;
+        const cluster = clusterInfo.cluster;
 
+        let secretPod : Construct | undefined;
         const values = { ...props.values ?? {}};
+
+        const ns = ssp.utils.createNamespace(this.props.namespace, clusterInfo.cluster, true);
 
         if (props.newRelicClusterName) {
             ssp.utils.setPath(values, "global.cluster", props.newRelicClusterName)
@@ -152,10 +156,18 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         if (props.newRelicLicenseKey) {
             ssp.utils.setPath(values, "global.licenseKey", props.newRelicLicenseKey);
         }
-        // } else if (props.nrLicenseKeySecretName) {
-        //     const response = await this.getNRLicenseKeyFromSecret(props.nrLicenseKeySecretName, clusterInfo.cluster.stack.region);
-        //     ssp.utils.setPath(values, "global.licenseKey", response.license_key);
-        // }
+        else if (props.nrLicenseKeySecretName) {
+            const sa = clusterInfo.cluster.addServiceAccount("new-relic-secret-sa", {
+                name: "new-relic-secret-sa",
+                namespace: this.props.namespace
+            });
+            sa.node.addDependency(ns);
+            const secretProviderClass = this.setupSecretProviderClass(clusterInfo, sa);
+            const secretPod = cluster.addManifest("nr-secret-pod", 
+                this.createSecretPodManifest("busybox", sa, "nr-license-secret-class"));
+            secretProviderClass.addDependent(secretPod);
+            setPath(values, "global.customSecretName", props.newRelicClusterName);
+        }
 
         if (props.lowDataMode) {
             ssp.utils.setPath(values, "global.lowDataMode", props.lowDataMode)
@@ -193,6 +205,90 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
             version: props.version,
             values
         });
+
+        if(secretPod) {
+            newRelicHelmChart.node.addDependency(secretPod);
+        }
+        
         return Promise.resolve(newRelicHelmChart);
     }
+
+    /**
+     * Creates a secret provider class for the specified secret key (licenseKey).
+     * The secret provider class can then be mounted to pods and the secret is made available as the volume mount.
+     * The CSI Secret Driver also creates a regular Kubernetes Secret once the secret volume is mounted. That secret
+     * is available while at least one pod with the mounted secret volume exists.
+     *
+     * @param clusterInfo
+     * @param serviceAccount
+     * @returns
+     */
+     private setupSecretProviderClass(clusterInfo: ssp.ClusterInfo, serviceAccount: ServiceAccount): ssp.SecretProviderClass {
+        const csiSecret: ssp.addons.CsiSecretProps = {
+            secretProvider: new ssp.LookupSecretsManagerSecretByName(this.options.nrLicenseKeySecretName!),
+            kubernetesSecret: {
+                secretName: this.options.nrLicenseKeySecretName!,
+                data: [
+                    {
+                        key: 'license'
+                    }
+                ]
+            }
+        };
+
+       return new ssp.addons.SecretProviderClass(clusterInfo, serviceAccount, "nr-license-secret-class", csiSecret);
+    }
+
+    /**
+     * Creates secret pod deployment manifest (assuming busybox)
+     * @param image  assumes busy box, allows to lock on a version
+     * @param sa 
+     * @param secretProviderClassName 
+     * @returns 
+     */
+    private createSecretPodManifest(image: string, sa: ServiceAccount, secretProviderClassName: string) {
+        const name = "new-relic-secret-pod";
+        const deployment = {
+            apiVersion: "apps/v1",
+            kind: "Deployment",
+            metadata: {
+                name: name,
+                namespace: sa.serviceAccountNamespace,
+            },
+            spec: {
+                replicas: 1,
+                selector: { matchLabels: { name }},
+                template: {
+                    metadata: { labels: { name }},
+                    spec: {
+                        serviceAccountName: sa.serviceAccountName,
+                        containers: [
+                            {
+                                name,
+                                image: image,
+                                command: ['sh', '-c', 'while :; do sleep 2073600; done'],
+                                volumeMounts: [{
+                                    name: "secrets-store",
+                                    mountPath: "/mnt/secrets-store",
+                                    readOnly: true,
+                                }]
+                            }
+                        ],
+                        volumes: [{
+                            name: "secrets-store",
+                            csi: {
+                                driver: "secrets-store.csi.k8s.io",
+                                readOnly: true,
+                                volumeAttributes: {
+                                    secretProviderClass: secretProviderClassName,
+                                }
+                            }
+                        }],
+                    }
+                }
+            }
+        };
+        return deployment;
+    }
 }
+
