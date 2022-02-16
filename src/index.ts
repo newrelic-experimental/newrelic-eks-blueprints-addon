@@ -1,8 +1,9 @@
-import { ClusterAddOn, ClusterInfo } from "@aws-quickstart/ssp-amazon-eks";
-import { SecretsManager } from "aws-sdk";
-import { Construct } from "@aws-cdk/core";
+import { ManagedPolicy } from '@aws-cdk/aws-iam';
+import { Construct } from '@aws-cdk/core';
+import { ServiceAccount } from '@aws-cdk/aws-eks';
+import * as ssp from '@aws-quickstart/ssp-amazon-eks';
 
-export interface NewRelicAddOnProps {
+export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     /**
      * Namespace for the add-on.
      */
@@ -58,11 +59,6 @@ export interface NewRelicAddOnProps {
     installInfrastructure?: boolean;
 
     /**
-     * Set to false to disable privileged install of New Relic Infrastructure Daemonset (default: true)
-     */
-    installInfrastructurePrivileged?: boolean;
-
-    /**
      * Set to true to install the New Relic Kubernetes Events integration (default: true)
      */
     installKubeEvents?: boolean;
@@ -96,7 +92,8 @@ export interface NewRelicAddOnProps {
     };
 }
 
-const defaultProps: NewRelicAddOnProps = {
+const defaultProps: ssp.addons.HelmAddOnProps & NewRelicAddOnProps = {
+    name: "newrelic-ssp-addon",
     repository: "https://helm-charts.newrelic.com",
     chart: "nri-bundle",
     namespace: "newrelic",
@@ -104,99 +101,88 @@ const defaultProps: NewRelicAddOnProps = {
     release: "newrelic-bundle",
     lowDataMode: true,
     installInfrastructure: true,
-    installInfrastructurePrivileged: true,
     installKSM: true,
     installKubeEvents: true,
     installMetricsAdapter: false,
     installPrometheus: true,
-    installLogging: true
+    installLogging: true,
+    values: {}
 };
 
-/**
- * Utility for setting individual values by name
- * https://github.com/aws-quickstart/ssp-amazon-eks/blob/main/lib/utils/object-utils.ts
- */
-const setPath = (obj : any, path: string, val: any) => {
-    const keys = path.split(".");
-    const lastKey = keys.pop()!;
-    const lastObj = keys.reduce((obj, key) =>
-        obj[key] = obj[key] || {},
-        obj);
-    lastObj[lastKey] = val;
-};
 
-export class NewRelicAddOn implements ClusterAddOn {
+export class NewRelicAddOn extends ssp.addons.HelmAddOn {
 
     readonly options: NewRelicAddOnProps;
 
     constructor(props?: NewRelicAddOnProps) {
+        super({...defaultProps, ...props});
         this.options = { ...defaultProps, ...props };
     }
 
-    async getNRLicenseKeyFromSecret(secretName: string, region: string) {
-        const client = new SecretsManager({ region: region });
-        let secretObject: any = {};
+    // async getNRLicenseKeyFromSecret(secretName: string, region: string) {
+    //     const client = new SecretsManager({ region: region });
+    //     let secretObject: any = {};
 
-        try {
-            let response = await client.getSecretValue({ SecretId: secretName }).promise();
-            if (response) {
-                if (response.SecretString) {
-                    secretObject = JSON.parse(response.SecretString);
-                } else if (response.SecretBinary) {
-                    secretObject = JSON.parse(response.SecretBinary.toString());
-                }
-            }
-        } catch (error) {
-            console.log(error);
-            throw error;
-        }
-        return secretObject;
-    }
+    //     try {
+    //         let response = await client.getSecretValue({ SecretId: secretName }).promise();
+    //         if (response) {
+    //             if (response.SecretString) {
+    //                 secretObject = JSON.parse(response.SecretString);
+    //             } else if (response.SecretBinary) {
+    //                 secretObject = JSON.parse(response.SecretBinary.toString());
+    //             }
+    //         }
+    //     } catch (error) {
+    //         console.log(error);
+    //         throw error;
+    //     }
+    //     return secretObject;
+    // }
 
-    async deploy(clusterInfo: ClusterInfo): Promise<Construct> {
+    async deploy(clusterInfo: ssp.ClusterInfo): Promise<Construct> {
 
         const props = this.options;
 
         const values = { ...props.values ?? {}};
 
         if (props.newRelicClusterName) {
-            setPath(values, "global.cluster", props.newRelicClusterName)
+            ssp.utils.setPath(values, "global.cluster", props.newRelicClusterName)
         }
 
         if (props.newRelicLicenseKey) {
-            setPath(values, "global.licenseKey", props.newRelicLicenseKey);
-        } else if (props.nrLicenseKeySecretName) {
-            const response = await this.getNRLicenseKeyFromSecret(props.nrLicenseKeySecretName, clusterInfo.cluster.stack.region);
-            setPath(values, "global.licenseKey", response.license_key);
+            ssp.utils.setPath(values, "global.licenseKey", props.newRelicLicenseKey);
         }
+        // } else if (props.nrLicenseKeySecretName) {
+        //     const response = await this.getNRLicenseKeyFromSecret(props.nrLicenseKeySecretName, clusterInfo.cluster.stack.region);
+        //     ssp.utils.setPath(values, "global.licenseKey", response.license_key);
+        // }
 
         if (props.lowDataMode) {
-            setPath(values, "global.lowDataMode", props.lowDataMode)
+            ssp.utils.setPath(values, "global.lowDataMode", props.lowDataMode)
         }
 
         if (props.installPrometheus) {
-            setPath(values, "prometheus", props.installPrometheus)
+            ssp.utils.setPath(values, "prometheus", props.installPrometheus)
         }
 
         if (props.installLogging) {
-            setPath(values, "logging", props.installLogging)
+            ssp.utils.setPath(values, "logging", props.installLogging)
         }
 
         if (props.installInfrastructure) {
-            setPath(values, "infrastructure.enabled", props.installInfrastructure);
-            setPath(values, "newrelic-infrastructure.privileged", props.installInfrastructurePrivileged);
+            ssp.utils.setPath(values, "infrastructure.enabled", props.installInfrastructure);
         }
 
         if (props.installKSM) {
-            setPath(values, "ksm.enabled", props.installKSM);
+            ssp.utils.setPath(values, "ksm.enabled", props.installKSM);
         }
 
         if (props.installKubeEvents) {
-            setPath(values, "kubeEvents.enabled", props.installKubeEvents);
+            ssp.utils.setPath(values, "kubeEvents.enabled", props.installKubeEvents);
         }
 
         if (props.installMetricsAdapter) {
-            setPath(values, "metrics-adapter.enabled", props.installMetricsAdapter);
+            ssp.utils.setPath(values, "metrics-adapter.enabled", props.installMetricsAdapter);
         }
 
         const newRelicHelmChart = clusterInfo.cluster.addHelmChart("newrelic-bundle", {
