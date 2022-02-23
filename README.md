@@ -1,8 +1,8 @@
 [![New Relic Experimental header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Experimental.png)](https://opensource.newrelic.com/oss-category/#new-relic-experimental)
 
-# New Relic AddOn for AWS SSP CDK Platform
+# New Relic AddOn for AWS EKS SSP
 
-This repository contains the source code for the New Relic AddOn for AWS SSP CDK. `ssp-amazon-eks` is a [CDK](https://aws.amazon.com/cdk/) construct that makes it easy for customers to build and deploy a Shared Services Platform (SSP) on top of [Amazon EKS](https://aws.amazon.com/eks/).
+This repository contains the source code for the New Relic AddOn for AWS EKS Shared Services Platform (SSP). `ssp-amazon-eks` is a [CDK](https://aws.amazon.com/cdk/) construct that makes it easy for customers to build and deploy New Relic's Kubernetes Integration as part of a Shared Services Platform (SSP) on top of [Amazon EKS](https://aws.amazon.com/eks/).
 
 ## Installation
 
@@ -25,9 +25,10 @@ ssp.EksBlueprint.builder()
     .addOns(new ssp.MetricsServerAddOn)
     .addOns(new ssp.ClusterAutoScalerAddOn)
     .addOns(new ssp.addons.SSMAgentAddOn)
+    .addOns(new ssp.addons.SecretsStoreAddOn)
     .addOns(new NewRelicAddOn({
-        nrLicenseKeySecretName: "nr-license-key", // stored in AWS Secrets Manager
-        newRelicClusterName: "my-test-cluster",
+        nrLicenseKeySecretName: "newrelic-license-key", // Secret Name in AWS Secrets Manager
+        newRelicClusterName: "demo-cluster",
         lowDataMode: true,
         installInfrastructure: true,  // New Relic Infrastructure Integration
         installKSM: true,             // Kube State Metrics, optional if already exists
@@ -37,70 +38,27 @@ ssp.EksBlueprint.builder()
     }))
     .region(process.env.AWS_REGION)
     .account(process.env.AWS_ACCOUNT)
-    .build(app, 'my-test-cluster');
+    .build(app, 'demo-cluster');
 ```
 
-## `NewRelicAddOn` Options (props)
-
-#### `newRelicLicenseKey: string` (required)
-
-New Relic License Key (plain text).  Use AWS Secrets Manager for added security.
-
-#### `newRelicLicenseKeySecretName: string` (required)
-
-Secret Name containing the New Relic License Key in AWS Secrets Manager.  Secret key should be `license_key`.
-
-#### `newRelicClusterName: string` (required)
-
-The name of the cluster to be displayed in the New Relic UI.
-
-#### `namespace?: string` (optional)
-
-The namespace where New Relic components will be installed. Defaults to `newrelic`.
-
-#### `lowDataMode?: boolean` (optional)
-
-Default `true`.  Set to `false` to disable `lowDataMode`.  For more details, visit https://docs.newrelic.com/docs/kubernetes-pixie/kubernetes-integration/installation/install-kubernetes-integration-using-helm/#reducedataingest
-
-#### `installInfrastructure?: boolean` (optional)
-
-Default `true`.  Set to `false` to disable installation of the New Relic Infrastructure Daemonset.
-
-#### `installInfrastructurePrivileged?: boolean` (optional)
-
-Default `true`.  Set to `false` to disable privileged install of the New Relic Infrastructure Daemonset.
-
-#### `installKSM?: boolean` (optional)
-
-Default `true`.  Set to `false` to disable installation of Kube State Metrics.  An instance of KSM is required in the cluster for the New Relic Infrastructure Daemonset to function properly.
-
-#### `installKubeEvents?: boolean` (optional)
-
-Default `true`.  Set to `false` to disable installation of the New Relic Kubernetes Events integration.
-
-#### `installLogging?: boolean` (optional)
-
-Default `true`.  Set to `false` to disable installation of the New Relic Logging (Fluent-Bit) Daemonset.
-
-#### `installMetricsAdapter?: boolean` (optional)
-
-Default `false`.  Set to `true` to enable installation of the New Relic Kubernetes Metrics Adapter.
-
-#### `installPrometheus?: boolean` (optional)
-
-Default `true`.  Set to `false` to disable installation of the Prometheus OpenMetrics Integration.
-
-#### `version?: string` (optional)
-
-Helm chart version.
-
-#### `repository?: string`, `release?: string`, `chart?: string` (optional)
-
-Additional options for customers who may need to supply their own private Helm repository.
-
-####  `values?: { [key: string]: any }` (optional)
-
-Custom values to pass to the chart. Config options: https://github.com/newrelic/helm-charts/tree/master/charts/nri-bundle#configuration
+| Variable                     | Type                   | Required | Description                                                                                                                                                                                                                             |
+|------------------------------|------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| newRelicLicenseKey           | string                 | True     | New Relic License Key (plain text).  Use `newRelicLicenseKeySecretName` in tandem with AWS Secrets Manager for added security.                                                                                                          |
+| newRelicLicenseKeySecretName | string                 | True     | Secret Name containing the New Relic License Key in AWS Secrets Manager.  Store in `plain text` mode, not `key/value`.                                                                                                                  |
+| newRelicClusterName          | string                 | True     |                                                                                                                                                                                                                                         |
+| namespace                    | string                 |          | The namespace where New Relic components will be installed. Defaults to  `newrelic`.                                                                                                                                                    |
+| lowDataMode                  | boolean                |          | Default  `true`.  Set to  `false`  to disable  `lowDataMode` .  For more details, visit https://docs.newrelic.com/docs/kubernetes-pixie/kubernetes-integration/installation/install-kubernetes-integration-using-helm/#reducedataingest |
+| installInfrastructure        | boolean                |          | Default  `true` .  Set to  `false`  to disable installation of the New Relic Infrastructure Daemonset.                                                                                                                                  |
+| installKSM                   | boolean                |          | Default  `true` .  Set to  `false`  to disable installation of Kube State Metrics.  An instance of KSM is required in the cluster for the New Relic Infrastructure Daemonset to function properly.                                      |
+| installKubeEvents            | boolean                |          | Default  `true` .  Set to  `false`  to disable installation of the New Relic Kubernetes Events integration.                                                                                                                             |
+| installLogging               | boolean                |          | Default  `true` .  Set to  `false`  to disable installation of the New Relic Logging (Fluent-Bit) Daemonset.                                                                                                                            |
+| installMetricsAdapter        | boolean                |          | Default  `false` .  Set to  `true`  to enable installation of the New Relic Kubernetes Metrics Adapter.                                                                                                                                 |
+| installPrometheus            | boolean                |          | Default  `true` .  Set to  `false`  to disable installation of the Prometheus OpenMetrics Integration.                                                                                                                                  |
+| version                      | string                 |          | Helm chart version.                                                                                                                                                                                                                     |
+| repository                   | string                 |          | Additional options for customers who may need to supply their own private Helm repository.                                                                                                                                              |
+| release                      | string                 |          | Additional options for customers who may need to supply their own private Helm repository.                                                                                                                                              |
+| chart                        | string                 |          | Additional options for customers who may need to supply their own private Helm repository.                                                                                                                                              |
+| values                       | { [key: string]: any } |          | Custom values to pass to the chart. Config options: https://github.com/newrelic/helm-charts/tree/master/charts/nri-bundle#configuration                                                                                                 |
 
 ## Support
 
