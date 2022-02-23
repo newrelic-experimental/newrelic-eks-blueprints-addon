@@ -28,13 +28,7 @@ ssp.EksBlueprint.builder()
     .addOns(new ssp.addons.SecretsStoreAddOn)
     .addOns(new NewRelicAddOn({
         nrLicenseKeySecretName: "newrelic-license-key", // Secret Name in AWS Secrets Manager
-        newRelicClusterName: "demo-cluster",
-        lowDataMode: true,
-        installInfrastructure: true,  // New Relic Infrastructure Integration
-        installKSM: true,             // Kube State Metrics, optional if already exists
-        installKubeEvents: true,      // New Relic Kubernetes Events Integration
-        installPrometheus: true,      // New Relic Prometheus OpenMetrics Integration
-        installLogging: true          // New Relic Logging (Fluent-Bit) Integration
+        newRelicClusterName: "demo-cluster"
     }))
     .region(process.env.AWS_REGION)
     .account(process.env.AWS_ACCOUNT)
@@ -72,7 +66,7 @@ If you have any questions, or to execute our corporate CLA, required if your con
 
 **A note about vulnerabilities**
 
-As noted in our [security policy](../../security/policy), New Relic is committed to the privacy and security of our customers and their data. We believe that providing coordinated disclosure by security researchers and engaging with the security community are important means to achieve our security goals.
+As noted in our [security policy](https://github.com/newrelic-experimental/newrelic-ssp-addon/security/policy), New Relic is committed to the privacy and security of our customers and their data. We believe that providing coordinated disclosure by security researchers and engaging with the security community are important means to achieve our security goals.
 
 If you believe you have found a security vulnerability in this project or any of New Relic's products or websites, we welcome and greatly appreciate you reporting it to New Relic through [HackerOne](https://hackerone.com/newrelic).
 
