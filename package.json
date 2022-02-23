@@ -1,6 +1,6 @@
 {
     "name": "@newrelic/newrelic-ssp-addon",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "files": [
@@ -20,7 +20,7 @@
     },
     "bin": {
         "eks-ssp-patterns": "bin/main.ts"
-      },
+    },
     "devDependencies": {
         "@types/jest": "^26.0.10",
         "@types/node": "10.17.27",
