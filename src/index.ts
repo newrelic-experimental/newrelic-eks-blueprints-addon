@@ -1,6 +1,8 @@
 import { ServiceAccount } from '@aws-cdk/aws-eks';
 import { Construct } from '@aws-cdk/core';
 import * as ssp from '@aws-quickstart/ssp-amazon-eks';
+import * as yaml from 'js-yaml';
+import * as request from 'sync-request';
 
 export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     /**
@@ -45,6 +47,11 @@ export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
      * Defaults to 'nri-bundle'.
      */
     chart?: string;
+
+    /**
+     *
+     */
+     installPixie?: boolean;
 
     /**
      * Set to true to enable Low Data Mode (default: true)
@@ -155,6 +162,10 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
             ssp.utils.setPath(values, "global.lowDataMode", props.lowDataMode)
         }
 
+        if(props.installPixie) {
+            this.deployPixieCRDs(clusterInfo.cluster)
+        }
+
         if (props.installPrometheus) {
             ssp.utils.setPath(values, "prometheus", props.installPrometheus)
         }
@@ -193,6 +204,15 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         }
 
         return Promise.resolve(newRelicHelmChart);
+    }
+
+    private deployPixieCRDs(clusterInfo) {
+
+        const devViziersUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/px.dev_viziers.yaml';
+        // const olmCrdUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/olm_crd.yaml';
+
+        const manifest = yaml.loadAll(request('GET', devViziersUrl).getBody());
+
     }
 
     /**
