@@ -2,7 +2,7 @@ import { ServiceAccount } from '@aws-cdk/aws-eks';
 import { Construct } from '@aws-cdk/core';
 import * as ssp from '@aws-quickstart/ssp-amazon-eks';
 import * as yaml from 'js-yaml';
-import * as request from 'sync-request';
+import request from 'then-request';
 
 export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     /**
@@ -49,7 +49,7 @@ export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     chart?: string;
 
     /**
-     *
+     * Just testing for now...
      */
      installPixie?: boolean;
 
@@ -163,7 +163,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         }
 
         if(props.installPixie) {
-            this.deployPixieCRDs(clusterInfo.cluster)
+            this.deployPixieCRDs(clusterInfo)
         }
 
         if (props.installPrometheus) {
@@ -206,12 +206,18 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         return Promise.resolve(newRelicHelmChart);
     }
 
-    private deployPixieCRDs(clusterInfo) {
+    private async deployPixieCRDs(clusterInfo: ssp.ClusterInfo) {
 
-        const devViziersUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/px.dev_viziers.yaml';
+        // const devViziersUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/px.dev_viziers.yaml';
         // const olmCrdUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/olm_crd.yaml';
 
-        const manifest = yaml.loadAll(request('GET', devViziersUrl).getBody());
+        //const manifest =  yaml.loadAll(request('GET', devViziersUrl).getBody());
+
+        const manifestUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/px.dev_viziers.yaml';
+        const result = await request('GET', manifestUrl).getBody()
+
+        const manifest = yaml.loadAll(result.toString());
+        clusterInfo.cluster.addManifest('pixie-crd', manifest);
 
     }
 
