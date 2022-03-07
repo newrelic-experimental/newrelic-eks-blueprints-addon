@@ -208,11 +208,6 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
 
     private async deployPixieCRDs(clusterInfo: ssp.ClusterInfo) {
 
-        // const devViziersUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/px.dev_viziers.yaml';
-        // const olmCrdUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/olm_crd.yaml';
-
-        //const manifest =  yaml.loadAll(request('GET', devViziersUrl).getBody());
-
         const manifestUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/px.dev_viziers.yaml';
         const result = await request('GET', manifestUrl).getBody()
 
