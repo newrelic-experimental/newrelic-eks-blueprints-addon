@@ -1,8 +1,6 @@
 import { ServiceAccount } from '@aws-cdk/aws-eks';
 import { Construct } from '@aws-cdk/core';
 import * as ssp from '@aws-quickstart/ssp-amazon-eks';
-import * as yaml from 'js-yaml';
-import request from 'then-request';
 
 export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     /**
@@ -49,11 +47,6 @@ export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     chart?: string;
 
     /**
-     * Just testing for now...
-     */
-     installPixie?: boolean;
-
-    /**
      * Set to true to enable Low Data Mode (default: true)
      * See docs for more details: https://docs.newrelic.com/docs/kubernetes-pixie/kubernetes-integration/installation/install-kubernetes-integration-using-helm/#reducedataingest
      */
@@ -90,6 +83,26 @@ export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     installPrometheus?: boolean;
 
     /**
+     * Set to true to install Pixie (default: false)
+     */
+    installPixie?: boolean;
+
+     /**
+     * Set to true to install the Newrelic <-> Pixie integration pod (default: false)
+     */
+    installPixieIntegration?: boolean;
+
+    /**
+     * Pixie Api Key - can be obtained in New Relic's Guided Install for Kubernetes
+     */
+    pixieApiKey?: string;
+
+    /**
+     * Pixie Deploy Key - can be obtained in New Relic's Guided Install for Kubernetes
+     */
+    pixieDeployKey?: string;
+
+    /**
      * Values to pass to the chart.
      * Config options: https://github.com/newrelic/helm-charts/tree/master/charts/nri-bundle#configuration
      */
@@ -112,6 +125,8 @@ const defaultProps: ssp.addons.HelmAddOnProps & NewRelicAddOnProps = {
     installMetricsAdapter: false,
     installPrometheus: true,
     installLogging: true,
+    installPixie: false,
+    installPixieIntegration: false,
     values: {}
 };
 
@@ -137,11 +152,13 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         const ns = ssp.utils.createNamespace(this.props.namespace, clusterInfo.cluster, true);
 
         if (props.newRelicClusterName) {
-            ssp.utils.setPath(values, "global.cluster", props.newRelicClusterName)
+            setPath(values, "global.cluster", props.newRelicClusterName)
         }
 
         if (props.newRelicLicenseKey) {
-            ssp.utils.setPath(values, "global.licenseKey", props.newRelicLicenseKey);
+            setPath(values, "global.licenseKey", props.newRelicLicenseKey);
+
+            this.installPixie(props, values);
         }
         else if (props.nrLicenseKeySecretName) {
             const sa = clusterInfo.cluster.addServiceAccount("new-relic-secret-sa", {
@@ -156,38 +173,36 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
             secretPod.node.addDependency(sa);
             setPath(values, "global.customSecretName", props.nrLicenseKeySecretName);
             setPath(values, "global.customSecretLicenseKey", "license");
+
+            this.installPixie(props, values);
         }
 
         if (props.lowDataMode) {
-            ssp.utils.setPath(values, "global.lowDataMode", props.lowDataMode)
-        }
-
-        if(props.installPixie) {
-            this.deployPixieCRDs(clusterInfo)
+            setPath(values, "global.lowDataMode", props.lowDataMode)
         }
 
         if (props.installPrometheus) {
-            ssp.utils.setPath(values, "prometheus", props.installPrometheus)
+            setPath(values, "prometheus", props.installPrometheus)
         }
 
         if (props.installLogging) {
-            ssp.utils.setPath(values, "logging", props.installLogging)
+            setPath(values, "logging", props.installLogging)
         }
 
         if (props.installInfrastructure) {
-            ssp.utils.setPath(values, "infrastructure.enabled", props.installInfrastructure);
+            setPath(values, "infrastructure.enabled", props.installInfrastructure);
         }
 
         if (props.installKSM) {
-            ssp.utils.setPath(values, "ksm.enabled", props.installKSM);
+            setPath(values, "ksm.enabled", props.installKSM);
         }
 
         if (props.installKubeEvents) {
-            ssp.utils.setPath(values, "kubeEvents.enabled", props.installKubeEvents);
+            setPath(values, "kubeEvents.enabled", props.installKubeEvents);
         }
 
         if (props.installMetricsAdapter) {
-            ssp.utils.setPath(values, "metrics-adapter.enabled", props.installMetricsAdapter);
+            setPath(values, "metrics-adapter.enabled", props.installMetricsAdapter);
         }
 
         const newRelicHelmChart = clusterInfo.cluster.addHelmChart("newrelic-bundle", {
@@ -206,14 +221,17 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         return Promise.resolve(newRelicHelmChart);
     }
 
-    private async deployPixieCRDs(clusterInfo: ssp.ClusterInfo) {
+    private installPixie(props: NewRelicAddOnProps, values: {[key: string]: any}) {
+        if (props.installPixie) {
+            setPath(values, "pixie-chart.enabled", true);
+            setPath(values, "pixie-chart.deployKey", props.pixieDeployKey);
+            setPath(values, "pixie-chart.clusterName", props.newRelicClusterName);
+        }
 
-        const manifestUrl = 'https://download.newrelic.com/install/kubernetes/pixie/latest/px.dev_viziers.yaml';
-        const result = await request('GET', manifestUrl).getBody()
-
-        const manifest = yaml.loadAll(result.toString());
-        clusterInfo.cluster.addManifest('pixie-crd', manifest);
-
+        if (props.installPixieIntegration) {
+            setPath(values, "newrelic-pixie.enabled", true);
+            setPath(values, "newrelic-pixie.apiKey", props.pixieApiKey);
+        }
     }
 
     /**
