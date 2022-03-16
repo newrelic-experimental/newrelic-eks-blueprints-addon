@@ -167,11 +167,13 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         }
         else if (props.nrLicenseKeySecretName && props.pixieDeployKeySecretName) {
 
+            // New Relic secret sa
             const sa = clusterInfo.cluster.addServiceAccount("new-relic-secret-sa", {
                 name: "new-relic-secret-sa",
                 namespace: this.props.namespace
             });
 
+            // Pixie secret sa - is this actually needed?
             const sb = clusterInfo.cluster.addServiceAccount("pixie-secret-sa", {
                 name: "pixie-secret-sa",
                 namespace: this.props.namespace
@@ -181,23 +183,23 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
             sb.node.addDependency(ns);
 
             // New Relic Secret Provider Class (Infra, NR+Pixie integration)
-            const secretProviderClass = this.setupSecretProviderClass(clusterInfo, sa);
+            const nrSecretProviderClass = this.nrSetupSecretProviderClass(clusterInfo, sa);
 
             // Pixie Secret Provider Class (Pixie Deployment)
             const pixieSecretProviderClass = this.setupPixieSecretProviderClass(clusterInfo, sb);
 
             const nrSecretPod = cluster.addManifest("nr-secret-pod",
-                this.createSecretPodManifest("busybox", sa, "nr-license-secret-class"));
+                this.nrCreateSecretPodManifest("busybox", sa, "nr-license-secret-class"));
 
             const pixieSecretPod = cluster.addManifest("pixie-secret-pod",
             this.pixieCreateSecretPodManifest("busybox", sb, "pixie-deploykey-secret-class"));
 
-            secretProviderClass.addDependent(nrSecretPod);
+            nrSecretProviderClass.addDependent(nrSecretPod);
             pixieSecretProviderClass.addDependent(pixieSecretPod);
             nrSecretPod.node.addDependency(sa);
             pixieSecretPod.node.addDependency(sb);
 
-            // Global custom secret names
+            // Global custom secret name and key
             setPath(values, "global.customSecretName", props.release + "-nrk8s-license-custom");
             setPath(values, "global.customSecretLicenseKey", "licenseKey");
 
@@ -263,7 +265,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
 
         if (props.installPixieIntegration && props.nrLicenseKeySecretName) {
             setPath(values, "newrelic-pixie.enabled", "true");
-            setPath(values, "newrelic-pixie.customSecretApiKeyName", props.release + "-nrk8s-license-custom");
+            setPath(values, "newrelic-pixie.customSecretApiKeyName", props.release + "-nrk8s-license-custom"); // temp name for now
             setPath(values, "newrelic-pixie.customSecretApiKeyKey", "pixieApiKey");
         } else if (props.installPixieIntegration && props.pixieApiKey) {
             setPath(values, "newrelic-pixie.enabled", "true");
@@ -272,7 +274,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
     }
 
     /**
-     * Creates a secret provider class for the specified secret key (licenseKey).
+     * Creates a secret provider class for the nri-bundle secret keys.
      * The secret provider class can then be mounted to pods and the secret is made available as the volume mount.
      * The CSI Secret Driver also creates a regular Kubernetes Secret once the secret volume is mounted. That secret
      * is available while at least one pod with the mounted secret volume exists.
@@ -281,7 +283,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
      * @param serviceAccount
      * @returns
      */
-     private setupSecretProviderClass(clusterInfo: ssp.ClusterInfo, serviceAccount: ServiceAccount): ssp.SecretProviderClass {
+     private nrSetupSecretProviderClass(clusterInfo: ssp.ClusterInfo, serviceAccount: ServiceAccount): ssp.SecretProviderClass {
 
         const csiSecret: ssp.addons.CsiSecretProps = {
             secretProvider: new ssp.LookupSecretsManagerSecretByName(this.options.nrLicenseKeySecretName!),
@@ -302,7 +304,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
     }
 
     /**
-     * Creates a secret provider class for the specified secret key (licenseKey).
+     * Creates a secret provider class for the pixie-operator deploy key.
      * The secret provider class can then be mounted to pods and the secret is made available as the volume mount.
      * The CSI Secret Driver also creates a regular Kubernetes Secret once the secret volume is mounted. That secret
      * is available while at least one pod with the mounted secret volume exists.
@@ -329,13 +331,13 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
     }
 
     /**
-     * Creates secret pod deployment manifest (assuming busybox)
+     * Creates secret pod deployment manifest for New Relic (assuming busybox)
      * @param image  assumes busy box, allows to lock on a version
      * @param sa
      * @param secretProviderClassName
      * @returns
      */
-    private createSecretPodManifest(image: string, sa: ServiceAccount, secretProviderClassName: string) {
+    private nrCreateSecretPodManifest(image: string, sa: ServiceAccount, secretProviderClassName: string) {
         const name = "new-relic-secret-pod";
         const deployment = {
             apiVersion: "apps/v1",
@@ -383,7 +385,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
     }
 
     /**
-     * Creates secret pod deployment manifest (assuming busybox)
+     * Creates secret pod deployment manifest for Pixie (assuming busybox)
      * @param image  assumes busy box, allows to lock on a version
      * @param sa
      * @param secretProviderClassName
