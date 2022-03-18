@@ -3,10 +3,6 @@ import { Construct } from '@aws-cdk/core';
 import * as ssp from '@aws-quickstart/ssp-amazon-eks';
 
 export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
-    /**
-     * Namespace for the add-on.
-     */
-    namespace?: string;
 
     /**
      * New Relic License Key - Plaintext
@@ -14,14 +10,37 @@ export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     newRelicLicenseKey?: string;
 
     /**
-     * Secret Name containing the New Relic License Key in AWS Secrets Manager
+     * AWS secret name containing the New Relic and Pixie keys in AWS Secrets Manager.
+     * Define secret in JSON format with the following keys:
+     * {
+     *  "nrLicenseKey": "<your New Relic license key>",
+     *  "pixieDeployKey": "<your Pixie deploy key>",
+     *  "pixieApiKey": "<your Pixie api key>"
+     * }
+     *
+     * Keys can be obtained in the New Relic Guided Install for Kubernetes
      */
-    nrLicenseKeySecretName?: string;
+    awsSecretName?: string;
 
     /**
      * Kubernetes cluster name in New Relic
      */
     newRelicClusterName?: string;
+
+    /**
+     * Pixie Api Key - can be obtained in New Relic's Guided Install for Kubernetes - Plaintext
+     */
+    pixieApiKey?: string;
+
+    /**
+     * Pixie Deploy Key - can be obtained in New Relic's Guided Install for Kubernetes - Plaintext
+     */
+    pixieDeployKey?: string;
+
+    /**
+     * Namespace for the add-on.
+     */
+    namespace?: string;
 
     /**
      * Helm chart version
@@ -83,6 +102,16 @@ export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     installPrometheus?: boolean;
 
     /**
+     * Set to true to install Pixie (default: false)
+     */
+    installPixie?: boolean;
+
+     /**
+     * Set to true to install the Newrelic <-> Pixie integration pod (default: false)
+     */
+    installPixieIntegration?: boolean;
+
+    /**
      * Values to pass to the chart.
      * Config options: https://github.com/newrelic/helm-charts/tree/master/charts/nri-bundle#configuration
      */
@@ -105,6 +134,8 @@ const defaultProps: ssp.addons.HelmAddOnProps & NewRelicAddOnProps = {
     installMetricsAdapter: false,
     installPrometheus: true,
     installLogging: true,
+    installPixie: false,
+    installPixieIntegration: false,
     values: {}
 };
 
@@ -123,60 +154,85 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
 
         const props = this.options;
         const cluster = clusterInfo.cluster;
-
-        let secretPod : Construct | undefined;
         const values = { ...props.values ?? {}};
+
+        let nrSecretPod : Construct | undefined;
 
         const ns = ssp.utils.createNamespace(this.props.namespace, clusterInfo.cluster, true);
 
-        if (props.newRelicClusterName) {
-            ssp.utils.setPath(values, "global.cluster", props.newRelicClusterName)
+        // Let's catch some configuration errors early if we can.
+        try {
+            if((props.pixieApiKey && props.awsSecretName) ||
+            (props.pixieDeployKey && props.awsSecretName) ||
+            (props.newRelicLicenseKey && props.awsSecretName)) {
+                throw "You must supply an AWS Secrets Manager secret name (awsSecretName) **OR** New Relic and Pixie keys directly. You cannot combine both. Please check your configuration."
+            }
+
+            if (!props.newRelicClusterName) {
+                throw "You must set a New Relic Cluster name.  Please check your configuration."
+            }
+        } catch (err) {
+            throw err;
         }
 
-        if (props.newRelicLicenseKey) {
-            ssp.utils.setPath(values, "global.licenseKey", props.newRelicLicenseKey);
-        }
-        else if (props.nrLicenseKeySecretName) {
+        if (props.newRelicClusterName && props.newRelicLicenseKey) {
+            setPath(values, "global.cluster", props.newRelicClusterName)
+            setPath(values, "global.licenseKey", props.newRelicLicenseKey);
+            this.installPixie(props, values);
+        } else if (props.awsSecretName) {
+
             const sa = clusterInfo.cluster.addServiceAccount("new-relic-secret-sa", {
                 name: "new-relic-secret-sa",
                 namespace: this.props.namespace
             });
+
             sa.node.addDependency(ns);
-            const secretProviderClass = this.setupSecretProviderClass(clusterInfo, sa);
-            const secretPod = cluster.addManifest("nr-secret-pod",
-                this.createSecretPodManifest("busybox", sa, "nr-license-secret-class"));
-            secretProviderClass.addDependent(secretPod);
-            secretPod.node.addDependency(sa);
-            setPath(values, "global.customSecretName", props.nrLicenseKeySecretName);
-            setPath(values, "global.customSecretLicenseKey", "license");
+
+            // Create New Relic secret provider class
+            // https://secrets-store-csi-driver.sigs.k8s.io/
+            const nrSecretProviderClass = this.nrSetupSecretProviderClass(clusterInfo, sa);
+
+            // New Relic secret pod
+            nrSecretPod = cluster.addManifest("nr-secret-pod",
+                this.nrCreateSecretPodManifest("busybox", sa, "nr-secret-class"));
+
+            nrSecretProviderClass.addDependent(nrSecretPod);
+            nrSecretPod.node.addDependency(sa);
+
+            // Set cluster name, global custom secret name and key
+            setPath(values, "global.cluster", props.newRelicClusterName)
+            setPath(values, "global.customSecretName", "pl-deploy-secrets");
+            setPath(values, "global.customSecretLicenseKey", "licenseKey");
+
+            this.installPixie(props, values);
         }
 
         if (props.lowDataMode) {
-            ssp.utils.setPath(values, "global.lowDataMode", props.lowDataMode)
+            setPath(values, "global.lowDataMode", props.lowDataMode)
         }
 
         if (props.installPrometheus) {
-            ssp.utils.setPath(values, "prometheus", props.installPrometheus)
+            setPath(values, "prometheus", props.installPrometheus)
         }
 
         if (props.installLogging) {
-            ssp.utils.setPath(values, "logging", props.installLogging)
+            setPath(values, "logging", props.installLogging)
         }
 
         if (props.installInfrastructure) {
-            ssp.utils.setPath(values, "infrastructure.enabled", props.installInfrastructure);
+            setPath(values, "infrastructure.enabled", props.installInfrastructure);
         }
 
         if (props.installKSM) {
-            ssp.utils.setPath(values, "ksm.enabled", props.installKSM);
+            setPath(values, "ksm.enabled", props.installKSM);
         }
 
         if (props.installKubeEvents) {
-            ssp.utils.setPath(values, "kubeEvents.enabled", props.installKubeEvents);
+            setPath(values, "kubeEvents.enabled", props.installKubeEvents);
         }
 
         if (props.installMetricsAdapter) {
-            ssp.utils.setPath(values, "metrics-adapter.enabled", props.installMetricsAdapter);
+            setPath(values, "metrics-adapter.enabled", props.installMetricsAdapter);
         }
 
         const newRelicHelmChart = clusterInfo.cluster.addHelmChart("newrelic-bundle", {
@@ -188,48 +244,81 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
             values
         });
 
-        if(secretPod) {
-            newRelicHelmChart.node.addDependency(secretPod);
+        if(nrSecretPod !== undefined) {
+            newRelicHelmChart.node.addDependency(nrSecretPod);
         }
 
         return Promise.resolve(newRelicHelmChart);
     }
 
     /**
-     * Creates a secret provider class for the specified secret key (licenseKey).
+     * Sets Pixie install options
+     * @param props
+     * @param values
+     */
+    private installPixie(props: NewRelicAddOnProps, values: {[key: string]: any}) {
+
+        // Installs Pixie into the cluster.
+        // If pixieDeployKey is not set, assumes deploy key is in AWS Secrets Manager
+        // and "unused" will be overwritten by secrets store
+        if (props.installPixie) {
+            setPath(values, "pixie-chart.enabled", "true");
+            setPath(values, "pixie-chart.deployKey", props.pixieDeployKey ?? "unused");
+            setPath(values, "pixie-chart.clusterName", props.newRelicClusterName);
+        }
+
+        if (props.installPixieIntegration && props.awsSecretName) {
+            setPath(values, "newrelic-pixie.enabled", "true");
+            // "pl-deploy-secrets" secret name must be hardcoded until Pixie allows custom secret names
+            setPath(values, "newrelic-pixie.customSecretApiKeyName", "pl-deploy-secrets");
+            setPath(values, "newrelic-pixie.customSecretApiKeyKey", "pixieApiKey");
+        } else if (props.installPixieIntegration && props.pixieApiKey) {
+            setPath(values, "newrelic-pixie.enabled", "true");
+            setPath(values, "newrelic-pixie.apiKey", props.pixieApiKey);
+        }
+    }
+
+    /**
+     * Creates a secret provider class for the nri-bundle secret keys.
      * The secret provider class can then be mounted to pods and the secret is made available as the volume mount.
      * The CSI Secret Driver also creates a regular Kubernetes Secret once the secret volume is mounted. That secret
      * is available while at least one pod with the mounted secret volume exists.
      *
      * @param clusterInfo
      * @param serviceAccount
-     * @returns
+     * @returns SecretProviderClass
      */
-     private setupSecretProviderClass(clusterInfo: ssp.ClusterInfo, serviceAccount: ServiceAccount): ssp.SecretProviderClass {
+     private nrSetupSecretProviderClass(clusterInfo: ssp.ClusterInfo, serviceAccount: ServiceAccount): ssp.SecretProviderClass {
+
         const csiSecret: ssp.addons.CsiSecretProps = {
-            secretProvider: new ssp.LookupSecretsManagerSecretByName(this.options.nrLicenseKeySecretName!),
+            secretProvider: new ssp.LookupSecretsManagerSecretByName(this.options.awsSecretName!),
+            jmesPath: [
+                { path: "nrLicenseKey", objectAlias: "newrelic-license-key" },
+                { path: "pixieApiKey", objectAlias: "pixie-api-key" },
+                { path: "pixieDeployKey", objectAlias: "pixie-deploy-key" }
+            ],
             kubernetesSecret: {
-                secretName: this.options.nrLicenseKeySecretName!,
+                secretName: "pl-deploy-secrets",
                 data: [
-                    {
-                        key: 'license'
-                    }
+                    { key: "licenseKey", objectName: "newrelic-license-key"},
+                    { key: "pixieApiKey", objectName: "pixie-api-key"},
+                    { key: "deploy-key", objectName: "pixie-deploy-key"}
                 ]
             }
         };
 
-       return new ssp.addons.SecretProviderClass(clusterInfo, serviceAccount, "nr-license-secret-class", csiSecret);
+       return new ssp.addons.SecretProviderClass(clusterInfo, serviceAccount, "nr-secret-class", csiSecret);
     }
 
     /**
-     * Creates secret pod deployment manifest (assuming busybox)
-     * @param image  assumes busy box, allows to lock on a version
+     * Creates secret pod deployment manifest for New Relic (assuming busybox)
+     * @param image assumes busy box, allows to lock on a version
      * @param sa
      * @param secretProviderClassName
-     * @returns
+     * @returns deployment
      */
-    private createSecretPodManifest(image: string, sa: ServiceAccount, secretProviderClassName: string) {
-        const name = "new-relic-secret-pod";
+    private nrCreateSecretPodManifest(image: string, sa: ServiceAccount, secretProviderClassName: string) {
+        const name = "new-relic-secrets-pod";
         const deployment = {
             apiVersion: "apps/v1",
             kind: "Deployment",
@@ -253,8 +342,9 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
                                     name: "secrets-store",
                                     mountPath: "/mnt/secrets-store",
                                     readOnly: true,
-                                }]
-                            }
+                                }
+                            ]
+                            },
                         ],
                         volumes: [{
                             name: "secrets-store",
@@ -262,10 +352,11 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
                                 driver: "secrets-store.csi.k8s.io",
                                 readOnly: true,
                                 volumeAttributes: {
-                                    secretProviderClass: secretProviderClassName,
+                                    secretProviderClass: secretProviderClassName
                                 }
                             }
-                        }],
+                        }
+                    ],
                     }
                 }
             }
