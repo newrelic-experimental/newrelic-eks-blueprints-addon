@@ -3,10 +3,6 @@ import { Construct } from '@aws-cdk/core';
 import * as ssp from '@aws-quickstart/ssp-amazon-eks';
 
 export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
-    /**
-     * Namespace for the add-on.
-     */
-    namespace?: string;
 
     /**
      * New Relic License Key - Plaintext
@@ -40,6 +36,11 @@ export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
      * Pixie Deploy Key - can be obtained in New Relic's Guided Install for Kubernetes - Plaintext
      */
     pixieDeployKey?: string;
+
+    /**
+     * Namespace for the add-on.
+     */
+    namespace?: string;
 
     /**
      * Helm chart version
@@ -109,7 +110,6 @@ export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
      * Set to true to install the Newrelic <-> Pixie integration pod (default: false)
      */
     installPixieIntegration?: boolean;
-
 
     /**
      * Values to pass to the chart.
