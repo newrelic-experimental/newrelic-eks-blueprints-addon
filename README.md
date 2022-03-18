@@ -12,6 +12,8 @@ Using [npm](https://npmjs.org):
 npm install @newrelic/newrelic-ssp-addon
 ```
 
+For a quick tutorial on EKS Blueprints, visit the [Getting Started guide](https://aws-quickstart.github.io/ssp-amazon-eks/getting-started/).
+
 ## Usage
 
 ```
