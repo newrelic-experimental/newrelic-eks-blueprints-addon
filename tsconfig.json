@@ -30,7 +30,8 @@
         "node_modules",
         "test",
         ".git",
-        "dist"
+        "dist",
+        "examples"
     ],
     "include": [
         "src/**/*",
