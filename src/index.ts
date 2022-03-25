@@ -1,6 +1,6 @@
-import { ServiceAccount } from '@aws-cdk/aws-eks';
-import { Construct } from '@aws-cdk/core';
-import * as ssp from '@aws-quickstart/ssp-amazon-eks';
+import { Construct } from 'constructs';
+import { ServiceAccount } from 'aws-cdk-lib/aws-eks';
+import * as ssp from '@aws-quickstart/eks-blueprints';
 
 export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
 
@@ -157,8 +157,9 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         const values = { ...props.values ?? {}};
 
         let nrSecretPod : Construct | undefined;
+        let installNamespace = this.props.namespace || "newrelic";
 
-        const ns = ssp.utils.createNamespace(this.props.namespace, clusterInfo.cluster, true);
+        const ns = ssp.utils.createNamespace(installNamespace, clusterInfo.cluster, true)
 
         // Let's catch some configuration errors early if we can.
         try {
@@ -183,7 +184,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
 
             const sa = clusterInfo.cluster.addServiceAccount("new-relic-secret-sa", {
                 name: "new-relic-secret-sa",
-                namespace: this.props.namespace
+                namespace: installNamespace
             });
 
             sa.node.addDependency(ns);

@@ -1,27 +1,27 @@
 [![New Relic Experimental header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Experimental.png)](https://opensource.newrelic.com/oss-category/#new-relic-experimental)
 
-# New Relic AddOn for AWS EKS Blueprints
+# New Relic Addon - AWS EKS Blueprints for CDK
 
-This repository contains the source code for the New Relic AddOn for AWS EKS Blueprints. `ssp-amazon-eks` is a [CDK](https://aws.amazon.com/cdk/) construct that makes it easy for customers to build and deploy New Relic's Kubernetes Integration as part of a Blueprint cluster on top of [Amazon EKS](https://aws.amazon.com/eks/).
+This repository contains the source code for the New Relic AddOn for AWS EKS Blueprints. EKS Blueprints is a [CDK](https://aws.amazon.com/cdk/) construct that makes it easy for customers to configure and deploy New Relic's Kubernetes integration as part of a EKS Blueprint cluster on [Amazon EKS](https://aws.amazon.com/eks/).
 
 ## Installation
 
 Using [npm](https://npmjs.org):
 
 ```bash
-npm install @newrelic/newrelic-ssp-addon
+npm install @newrelic/newrelic-blueprints-addon
 ```
 
-For a quick tutorial on EKS Blueprints, visit the [Getting Started guide](https://aws-quickstart.github.io/ssp-amazon-eks/getting-started/).
+For a quick tutorial on EKS Blueprints, visit the [Getting Started guide](https://aws-quickstart.github.io/cdk-eks-blueprints/getting-started/).
 
 ## Usage
 
 ```
-import { App } from '@aws-cdk/core';
-import * as ssp from '@aws-quickstart/ssp-amazon-eks';
-import { NewRelicAddOn } from '@newrelic/newrelic-ssp-addon';
+import * as cdk from 'aws-cdk-lib';
+import * as ssp from '@aws-quickstart/eks-blueprints';
+import { NewRelicAddOn } from '@newrelic/newrelic-blueprints-addon';
 
-const app = new App();
+const app = new cdk.App();
 
 ssp.EksBlueprint.builder()
     .addOns(new ssp.MetricsServerAddOn)
@@ -29,12 +29,11 @@ ssp.EksBlueprint.builder()
     .addOns(new ssp.addons.SSMAgentAddOn)
     .addOns(new ssp.addons.SecretsStoreAddOn)
     .addOns(new NewRelicAddOn({
-        awsSecretName: "newrelic-pixie-secrets", // Secret Name in AWS Secrets Manager
+        version: "4.2.0-beta",
         newRelicClusterName: "demo-cluster",
-        // See System Requirements
-        // https://docs.px.dev/installing-pixie/requirements/
+        awsSecretName: "newrelic-pixie-combined", // Secret Name in AWS Secrets Manager
         installPixie: true,
-        installPixieIntegration: true
+        installPixieIntegration: true,
     }))
     .region(process.env.AWS_REGION)
     .account(process.env.AWS_ACCOUNT)
