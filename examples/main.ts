@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ssp from '@aws-quickstart/eks-blueprints';
-import { NewRelicAddOn } from '@newrelic/newrelic-blueprints-addon';
+import { NewRelicAddOn } from '@newrelic/newrelic-eks-blueprints-addon';
 
 const app = new cdk.App();
 

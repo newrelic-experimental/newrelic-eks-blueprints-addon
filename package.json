@@ -1,5 +1,5 @@
 {
-    "name": "@newrelic/newrelic-blueprints-addon",
+    "name": "@newrelic/newrelic-eks-blueprints-addon",
     "version": "1.0.0",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
     "license": "Apache-2.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/newrelic-experimental/newrelic-blueprints-addon.git"
+        "url": "https://github.com/newrelic-experimental/newrelic-eks-blueprints-addon.git"
     },
     "scripts": {
         "build": "rm -rf dist && tsc",

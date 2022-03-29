@@ -9,7 +9,7 @@ This repository contains the source code for the New Relic AddOn for AWS EKS Blu
 Using [npm](https://npmjs.org):
 
 ```bash
-npm install @newrelic/newrelic-blueprints-addon
+npm install @newrelic/newrelic-eks-blueprints-addon
 ```
 
 For a quick tutorial on EKS Blueprints, visit the [Getting Started guide](https://aws-quickstart.github.io/cdk-eks-blueprints/getting-started/).
@@ -19,7 +19,7 @@ For a quick tutorial on EKS Blueprints, visit the [Getting Started guide](https:
 ```
 import * as cdk from 'aws-cdk-lib';
 import * as ssp from '@aws-quickstart/eks-blueprints';
-import { NewRelicAddOn } from '@newrelic/newrelic-blueprints-addon';
+import { NewRelicAddOn } from '@newrelic/newrelic-eks-blueprints-addon';
 
 const app = new cdk.App();
 
