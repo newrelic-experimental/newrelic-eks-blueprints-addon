@@ -18,16 +18,16 @@ For a quick tutorial on EKS Blueprints, visit the [Getting Started guide](https:
 
 ```
 import * as cdk from 'aws-cdk-lib';
-import * as ssp from '@aws-quickstart/eks-blueprints';
+import * as blueprints from '@aws-quickstart/eks-blueprints';
 import { NewRelicAddOn } from '@newrelic/newrelic-eks-blueprints-addon';
 
 const app = new cdk.App();
 
-ssp.EksBlueprint.builder()
-    .addOns(new ssp.MetricsServerAddOn)
-    .addOns(new ssp.ClusterAutoScalerAddOn)
-    .addOns(new ssp.addons.SSMAgentAddOn)
-    .addOns(new ssp.addons.SecretsStoreAddOn)
+blueprints.EksBlueprint.builder()
+    .addOns(new blueprints.MetricsServerAddOn)
+    .addOns(new blueprints.ClusterAutoScalerAddOn)
+    .addOns(new blueprints.addons.SSMAgentAddOn)
+    .addOns(new blueprints.addons.SecretsStoreAddOn)
     .addOns(new NewRelicAddOn({
         version: "4.2.0-beta",
         newRelicClusterName: "demo-cluster",

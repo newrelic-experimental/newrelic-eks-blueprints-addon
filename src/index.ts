@@ -1,8 +1,8 @@
 import { Construct } from 'constructs';
 import { ServiceAccount } from 'aws-cdk-lib/aws-eks';
-import * as ssp from '@aws-quickstart/eks-blueprints';
+import * as blueprints from '@aws-quickstart/eks-blueprints';
 
-export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
+export interface NewRelicAddOnProps extends blueprints.addons.HelmAddOnUserProps {
 
     /**
      * New Relic License Key - Plaintext
@@ -120,8 +120,8 @@ export interface NewRelicAddOnProps extends ssp.addons.HelmAddOnUserProps {
     };
 }
 
-const defaultProps: ssp.addons.HelmAddOnProps & NewRelicAddOnProps = {
-    name: "newrelic-ssp-addon",
+const defaultProps: blueprints.addons.HelmAddOnProps & NewRelicAddOnProps = {
+    name: "newrelic-eks-blueprints-addon",
     repository: "https://helm-charts.newrelic.com",
     chart: "nri-bundle",
     namespace: "newrelic",
@@ -139,9 +139,9 @@ const defaultProps: ssp.addons.HelmAddOnProps & NewRelicAddOnProps = {
     values: {}
 };
 
-const setPath = ssp.utils.setPath;
+const setPath = blueprints.utils.setPath;
 
-export class NewRelicAddOn extends ssp.addons.HelmAddOn {
+export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
 
     readonly options: NewRelicAddOnProps;
 
@@ -150,7 +150,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         this.options = { ...defaultProps, ...props };
     }
 
-    async deploy(clusterInfo: ssp.ClusterInfo): Promise<Construct> {
+    async deploy(clusterInfo: blueprints.ClusterInfo): Promise<Construct> {
 
         const props = this.options;
         const cluster = clusterInfo.cluster;
@@ -159,7 +159,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
         let nrSecretPod : Construct | undefined;
         let installNamespace = this.props.namespace || "newrelic";
 
-        const ns = ssp.utils.createNamespace(installNamespace, clusterInfo.cluster, true)
+        const ns = blueprints.utils.createNamespace(installNamespace, clusterInfo.cluster, true)
 
         // Let's catch some configuration errors early if we can.
         try {
@@ -289,10 +289,10 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
      * @param serviceAccount
      * @returns SecretProviderClass
      */
-     private nrSetupSecretProviderClass(clusterInfo: ssp.ClusterInfo, serviceAccount: ServiceAccount): ssp.SecretProviderClass {
+     private nrSetupSecretProviderClass(clusterInfo: blueprints.ClusterInfo, serviceAccount: ServiceAccount): blueprints.SecretProviderClass {
 
-        const csiSecret: ssp.addons.CsiSecretProps = {
-            secretProvider: new ssp.LookupSecretsManagerSecretByName(this.options.awsSecretName!),
+        const csiSecret: blueprints.addons.CsiSecretProps = {
+            secretProvider: new blueprints.LookupSecretsManagerSecretByName(this.options.awsSecretName!),
             jmesPath: [
                 { path: "nrLicenseKey", objectAlias: "newrelic-license-key" },
                 { path: "pixieApiKey", objectAlias: "pixie-api-key" },
@@ -308,7 +308,7 @@ export class NewRelicAddOn extends ssp.addons.HelmAddOn {
             }
         };
 
-       return new ssp.addons.SecretProviderClass(clusterInfo, serviceAccount, "nr-secret-class", csiSecret);
+       return new blueprints.addons.SecretProviderClass(clusterInfo, serviceAccount, "nr-secret-class", csiSecret);
     }
 
     /**
