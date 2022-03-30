@@ -2,7 +2,7 @@
 
 # New Relic Addon - AWS EKS Blueprints for CDK
 
-This repository contains the source code for the New Relic AddOn for AWS EKS Blueprints. EKS Blueprints is a [CDK](https://aws.amazon.com/cdk/) construct that makes it easy for customers to configure and deploy New Relic's Kubernetes integration as part of a EKS Blueprint cluster on [Amazon EKS](https://aws.amazon.com/eks/).
+This repository contains the source code for the New Relic AddOn for AWS EKS Blueprints. EKS Blueprints is a [CDK](https://aws.amazon.com/cdk/) construct that makes it easy for customers to configure and deploy New Relic's Kubernetes integration as part of an EKS Blueprint cluster on [Amazon EKS](https://aws.amazon.com/eks/).
 
 ## Installation
 
