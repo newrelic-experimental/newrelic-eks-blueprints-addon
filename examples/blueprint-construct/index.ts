@@ -85,7 +85,7 @@ export default class BlueprintConstruct extends Construct {
             .addOns(...addOns)
             .clusterProvider(clusterProvider)
             .teams(...teams)
-            // .enableControlPlaneLogTypes('api')
+            .enableControlPlaneLogTypes('api')
             .build(scope, blueprintID, props);
     }
 
