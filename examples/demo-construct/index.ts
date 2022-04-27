@@ -13,7 +13,7 @@ export default class NewRelicConstruct extends Construct {
         const addOns: Array<blueprints.ClusterAddOn> = [
             new blueprints.addons.SecretsStoreAddOn(),
             new NewRelicAddOn({
-                version: "4.2.0-beta",
+                version: "4.3.1-beta",
                 newRelicClusterName: id,
                 // Uncomment "awsSecretName" after you create your secret in AWS Secrets Manager.
                 // Required: nrLicenseKey
@@ -25,7 +25,7 @@ export default class NewRelicConstruct extends Construct {
                 //     "pixieApiKey": "px-api-XXXX",
                 //     "nrLicenseKey": "XXXXNRAL"
                 // }
-                awsSecretName: "newrelic-pixie-combined",
+                // awsSecretName: "newrelic-pixie-combined",
 
                 // Uncomment "installPixie" and "installPixieIntegration" if installing Pixie.
                 // installPixie: true,

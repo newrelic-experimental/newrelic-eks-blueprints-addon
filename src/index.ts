@@ -202,7 +202,7 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
 
             // Set cluster name, global custom secret name and key
             setPath(values, "global.cluster", props.newRelicClusterName)
-            setPath(values, "global.customSecretName", "pl-deploy-secrets");
+            setPath(values, "global.customSecretName", "newrelic-pixie-secrets");
             setPath(values, "global.customSecretLicenseKey", "licenseKey");
 
             this.installPixie(props, values);
@@ -266,12 +266,13 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
             setPath(values, "pixie-chart.enabled", "true");
             setPath(values, "pixie-chart.deployKey", props.pixieDeployKey ?? "unused");
             setPath(values, "pixie-chart.clusterName", props.newRelicClusterName);
+            setPath(values, "pixie-chart.customDeployKeySecret", "newrelic-pixie-secrets")
         }
 
         if (props.installPixieIntegration && props.awsSecretName) {
             setPath(values, "newrelic-pixie.enabled", "true");
             // "pl-deploy-secrets" secret name must be hardcoded until Pixie allows custom secret names
-            setPath(values, "newrelic-pixie.customSecretApiKeyName", "pl-deploy-secrets");
+            setPath(values, "newrelic-pixie.customSecretApiKeyName", "newrelic-pixie-secrets");
             setPath(values, "newrelic-pixie.customSecretApiKeyKey", "pixieApiKey");
         } else if (props.installPixieIntegration && props.pixieApiKey) {
             setPath(values, "newrelic-pixie.enabled", "true");
@@ -299,7 +300,7 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
                 { path: "pixieDeployKey", objectAlias: "pixie-deploy-key" }
             ],
             kubernetesSecret: {
-                secretName: "pl-deploy-secrets",
+                secretName: "newrelic-pixie-secrets",
                 data: [
                     { key: "licenseKey", objectName: "newrelic-license-key"},
                     { key: "pixieApiKey", objectName: "pixie-api-key"},
