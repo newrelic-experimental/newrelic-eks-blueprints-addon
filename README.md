@@ -41,10 +41,10 @@ const app = new cdk.App();
 blueprints.EksBlueprint.builder()
     .addOns(new blueprints.MetricsServerAddOn)
     .addOns(new blueprints.ClusterAutoScalerAddOn)
-    .addOns(new blueprints.addons.SSMAgentAddOn)
-    .addOns(new blueprints.addons.SecretsStoreAddOn)
+    .addOns(new blueprints.SSMAgentAddOn)
+    .addOns(new blueprints.SecretsStoreAddOn)
     .addOns(new NewRelicAddOn({
-        version: "4.2.0-beta",
+        version: "4.3.1-beta",
         newRelicClusterName: "demo-cluster",
         awsSecretName: "newrelic-pixie-combined", // Secret Name in AWS Secrets Manager
         installPixie: true,
@@ -66,8 +66,8 @@ import { NewRelicAddOn } from '@newrelic/newrelic-eks-blueprints-addon';
 const app = new cdk.App();
 
 blueprints.EksBlueprint.builder()
-    .addOns(new blueprints.MetricsServerAddOn)
-    .addOns(new blueprints.ClusterAutoScalerAddOn)
+    .addOns(new blueprints.addons.MetricsServerAddOn)
+    .addOns(new blueprints.addons.ClusterAutoScalerAddOn)
     .addOns(new blueprints.addons.SSMAgentAddOn)
     .addOns(new blueprints.addons.SecretsStoreAddOn)
     .addOns(new NewRelicAddOn({
