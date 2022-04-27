@@ -66,10 +66,10 @@ import { NewRelicAddOn } from '@newrelic/newrelic-eks-blueprints-addon';
 const app = new cdk.App();
 
 blueprints.EksBlueprint.builder()
-    .addOns(new blueprints.addons.MetricsServerAddOn)
-    .addOns(new blueprints.addons.ClusterAutoScalerAddOn)
-    .addOns(new blueprints.addons.SSMAgentAddOn)
-    .addOns(new blueprints.addons.SecretsStoreAddOn)
+    .addOns(new blueprints.MetricsServerAddOn)
+    .addOns(new blueprints.ClusterAutoScalerAddOn)
+    .addOns(new blueprints.SSMAgentAddOn)
+    .addOns(new blueprints.SecretsStoreAddOn)
     .addOns(new NewRelicAddOn({
         version: "4.2.0-beta",
         newRelicClusterName: "demo-cluster",
