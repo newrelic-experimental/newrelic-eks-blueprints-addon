@@ -13,7 +13,7 @@ export default class NewRelicConstruct extends Construct {
         const addOns: Array<blueprints.ClusterAddOn> = [
             new blueprints.addons.SecretsStoreAddOn(),
             new NewRelicAddOn({
-                version: "4.3.1-beta",
+                version: "4.3.2",
                 newRelicClusterName: id,
                 // Uncomment "awsSecretName" after you create your secret in AWS Secrets Manager.
                 // Required: nrLicenseKey

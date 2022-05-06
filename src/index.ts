@@ -1,6 +1,7 @@
 import { Construct } from 'constructs';
 import { ServiceAccount } from 'aws-cdk-lib/aws-eks';
 import * as blueprints from '@aws-quickstart/eks-blueprints';
+import { JmesPathObject, KubernetesSecret } from '@aws-quickstart/eks-blueprints';
 
 export interface NewRelicAddOnProps extends blueprints.addons.HelmAddOnUserProps {
 
@@ -125,7 +126,7 @@ const defaultProps: blueprints.addons.HelmAddOnProps & NewRelicAddOnProps = {
     repository: "https://helm-charts.newrelic.com",
     chart: "nri-bundle",
     namespace: "newrelic",
-    version: "3.4.0",
+    version: "4.3.2",
     release: "newrelic-bundle",
     lowDataMode: true,
     installInfrastructure: true,
@@ -179,7 +180,7 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
         if (props.newRelicClusterName && props.newRelicLicenseKey) {
             setPath(values, "global.cluster", props.newRelicClusterName)
             setPath(values, "global.licenseKey", props.newRelicLicenseKey);
-            this.installPixie(props, values);
+            this.installPixieCheck(props, values);
         } else if (props.awsSecretName) {
 
             const sa = clusterInfo.cluster.addServiceAccount("new-relic-secret-sa", {
@@ -189,9 +190,10 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
 
             sa.node.addDependency(ns);
 
+            console.log("installPixie: " + props.installPixie)
             // Create New Relic secret provider class
             // https://secrets-store-csi-driver.sigs.k8s.io/
-            const nrSecretProviderClass = this.nrSetupSecretProviderClass(clusterInfo, sa);
+            const nrSecretProviderClass = this.nrSetupSecretProviderClass(clusterInfo, sa, props.installPixie!);
 
             // New Relic secret pod
             nrSecretPod = cluster.addManifest("nr-secret-pod",
@@ -205,7 +207,7 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
             setPath(values, "global.customSecretName", "newrelic-pixie-secrets");
             setPath(values, "global.customSecretLicenseKey", "licenseKey");
 
-            this.installPixie(props, values);
+            this.installPixieCheck(props, values);
         }
 
         if (props.lowDataMode) {
@@ -257,7 +259,7 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
      * @param props
      * @param values
      */
-    private installPixie(props: NewRelicAddOnProps, values: {[key: string]: any}) {
+    private installPixieCheck(props: NewRelicAddOnProps, values: {[key: string]: any}) {
 
         // Installs Pixie into the cluster.
         // If pixieDeployKey is not set, assumes deploy key is in AWS Secrets Manager
@@ -290,22 +292,26 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
      * @param serviceAccount
      * @returns SecretProviderClass
      */
-     private nrSetupSecretProviderClass(clusterInfo: blueprints.ClusterInfo, serviceAccount: ServiceAccount): blueprints.SecretProviderClass {
+     private nrSetupSecretProviderClass(clusterInfo: blueprints.ClusterInfo, serviceAccount: ServiceAccount, installPixie: boolean): blueprints.SecretProviderClass {
+
+        var data: { key: string; objectName: string; }[] = [{ key: "licenseKey", objectName: "newrelic-license-key"}]
+        var jmesPath: JmesPathObject[] = [{ path: "nrLicenseKey", objectAlias: "newrelic-license-key" }]
+
+        if (installPixie) {
+
+            data.push({ key: "pixieApiKey", objectName: "pixie-api-key"},
+                      { key: "deploy-key", objectName: "pixie-deploy-key"})
+
+            jmesPath.push({ path: "pixieApiKey", objectAlias: "pixie-api-key" },
+                          { path: "pixieDeployKey", objectAlias: "pixie-deploy-key" })
+        }
 
         const csiSecret: blueprints.addons.CsiSecretProps = {
             secretProvider: new blueprints.LookupSecretsManagerSecretByName(this.options.awsSecretName!),
-            jmesPath: [
-                { path: "nrLicenseKey", objectAlias: "newrelic-license-key" },
-                { path: "pixieApiKey", objectAlias: "pixie-api-key" },
-                { path: "pixieDeployKey", objectAlias: "pixie-deploy-key" }
-            ],
+            jmesPath: jmesPath,
             kubernetesSecret: {
                 secretName: "newrelic-pixie-secrets",
-                data: [
-                    { key: "licenseKey", objectName: "newrelic-license-key"},
-                    { key: "pixieApiKey", objectName: "pixie-api-key"},
-                    { key: "deploy-key", objectName: "pixie-deploy-key"}
-                ]
+                data: data
             }
         };
 

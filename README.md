@@ -44,7 +44,7 @@ blueprints.EksBlueprint.builder()
     .addOns(new blueprints.SSMAgentAddOn)
     .addOns(new blueprints.SecretsStoreAddOn)
     .addOns(new NewRelicAddOn({
-        version: "4.3.1-beta",
+        version: "4.3.2",
         newRelicClusterName: "demo-cluster",
         awsSecretName: "newrelic-pixie-combined", // Secret Name in AWS Secrets Manager
         installPixie: true,
@@ -71,7 +71,7 @@ blueprints.EksBlueprint.builder()
     .addOns(new blueprints.SSMAgentAddOn)
     .addOns(new blueprints.SecretsStoreAddOn)
     .addOns(new NewRelicAddOn({
-        version: "4.2.0-beta",
+        version: "4.3.2",
         newRelicClusterName: "demo-cluster",
         newRelicLicenseKey: "NEW RELIC LICENSE KEY",
         installPixie: true,
