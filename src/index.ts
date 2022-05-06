@@ -190,7 +190,6 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
 
             sa.node.addDependency(ns);
 
-            console.log("installPixie: " + props.installPixie)
             // Create New Relic secret provider class
             // https://secrets-store-csi-driver.sigs.k8s.io/
             const nrSecretProviderClass = this.nrSetupSecretProviderClass(clusterInfo, sa, props.installPixie!);
