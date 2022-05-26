@@ -169,15 +169,16 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
             (props.newRelicLicenseKey && props.awsSecretName)) {
                 throw "You must supply an AWS Secrets Manager secret name (awsSecretName) **OR** New Relic and Pixie keys directly. You cannot combine both. Please check your configuration."
             }
-
-            if (!props.newRelicClusterName) {
-                throw "You must set a New Relic Cluster name.  Please check your configuration."
-            }
         } catch (err) {
             throw err;
         }
 
-        if (props.newRelicClusterName && props.newRelicLicenseKey) {
+        // If newRelicClusterName is not set, use the EKS Cluster Name instead.
+        if (!props.newRelicClusterName) {
+            props.newRelicClusterName = clusterInfo.cluster.clusterName
+        }
+
+        if (props.newRelicLicenseKey) {
             setPath(values, "global.cluster", props.newRelicClusterName)
             setPath(values, "global.licenseKey", props.newRelicLicenseKey);
             this.installPixieCheck(props, values);
