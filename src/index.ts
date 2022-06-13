@@ -126,7 +126,7 @@ const defaultProps: blueprints.addons.HelmAddOnProps & NewRelicAddOnProps = {
     repository: "https://helm-charts.newrelic.com",
     chart: "nri-bundle",
     namespace: "newrelic",
-    version: "4.3.2",
+    version: "4.5.6",
     release: "newrelic-bundle",
     lowDataMode: true,
     installInfrastructure: true,
