@@ -215,11 +215,11 @@ export class NewRelicAddOn extends blueprints.addons.HelmAddOn {
         }
 
         if (props.installPrometheus) {
-            setPath(values, "prometheus", props.installPrometheus)
+            setPath(values, "prometheus.enabled", props.installPrometheus)
         }
 
         if (props.installLogging) {
-            setPath(values, "logging", props.installLogging)
+            setPath(values, "logging.enabled", props.installLogging)
         }
 
         if (props.installInfrastructure) {
